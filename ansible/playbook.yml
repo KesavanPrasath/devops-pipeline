@@ -1,0 +1,47 @@
+---
+- name: Configure EC2 and Deploy Nginx Docker Container
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt package cache (Ubuntu)
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+        state: latest
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+
+    - name: Install Docker CE
+      apt:
+        name: docker-ce
+        state: latest
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull and run Nginx Docker Container
+      shell: |
+        docker stop my-nginx || true
+        docker rm my-nginx || true
+        docker run -d --name my-nginx -p 80:80 nginx:latest
+      
